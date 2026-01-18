@@ -62,6 +62,11 @@ isort src/ experiments/
 - `configs/base.yaml`: 공통 설정 (optimizer, scheduler, metrics)
 - `configs/track_{a,b,c}.yaml`: 트랙별 하이퍼파라미터
 
+### 인프라
+- 데이터나 트레이닝의 성격에 따라 로컬, AWS ECS Fargate, SageMaker 중 선택
+- AWS 사용시엔 시간 및 비용 최적화를 위해 스팟 요금제를 필수로 사용한다. 
+- AWS 사용 테스트 병렬화가 가능한 경우 여러 태스크를 동시에 실행하고, 단일 테스트도 멀티 CPU, 멀티 GPU 인스턴스를 최대한 활용한다.
+
 ## 코드 컨벤션
 
 - Python: Black, isort
