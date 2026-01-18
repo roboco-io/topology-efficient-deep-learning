@@ -222,6 +222,44 @@ model:
 | B | 고밀도 그래프에서 동일 성능 + VRAM/latency 절감 |
 | C | 파라미터 30-70% 절감 + 성능 유지 |
 
+---
+
+## 실험 결과
+
+### Track A: Persistent Homology 시계열 분류
+
+**가설**: PH 요약 피처를 사용하면 더 작은 모델(PH-MLP)로 유사 성능을 달성하여 추론 비용을 절감할 수 있다.
+
+#### 결과 요약
+
+| Dataset | PH-MLP (F1) | InceptionTime (F1) | 차이 |
+|---------|-------------|-------------------|------|
+| ECG200 | 0.755 ± 0.008 | 0.839 ± 0.100 | -8.4%p |
+| FordA | 0.641 ± 0.013 | 0.930 ± 0.034 | -28.9%p |
+| ElectricDevices | 0.330 ± 0.017 | 0.652 ± 0.010 | -32.2%p |
+| Wafer | 0.833 ± 0.016 | 0.963 ± 0.039 | -13.0%p |
+
+#### 결론: **가설 기각**
+
+- PH-MLP가 모든 데이터셋에서 InceptionTime 대비 **8~32%p 낮은 성능**
+- 성공 기준(≤1%p 하락) 미달성
+
+#### 원인 분석
+
+1. **정보 손실**: Takens embedding → PH → Vectorization 과정에서 시간적 패턴 손실
+2. **계산 비용**: 긴 시계열에서 PH 계산이 O(n³)으로 비효율적
+3. **다중 클래스 한계**: PH 피처가 복잡한 분류 경계 표현에 부적합
+
+#### 실험 환경
+
+- AWS SageMaker Managed Spot Training (ml.g4dn.xlarge)
+- 3개 시드 반복 (42, 123, 456)
+- 총 비용: ~$0.40
+
+> 상세 결과: [results/track_a_results.md](results/track_a_results.md)
+
+---
+
 ## 결과 시각화
 
 ```bash

@@ -1,0 +1,79 @@
+{
+  "family": "topology-dl-track-a",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "2048",
+  "memory": "4096",
+  "executionRoleArn": "${EXECUTION_ROLE_ARN}",
+  "taskRoleArn": "${TASK_ROLE_ARN}",
+  "containerDefinitions": [
+    {
+      "name": "experiment",
+      "image": "${ECR_IMAGE}",
+      "essential": true,
+      "environment": [
+        {
+          "name": "WANDB_API_KEY",
+          "value": "${WANDB_API_KEY}"
+        },
+        {
+          "name": "WANDB_PROJECT",
+          "value": "topology-efficient-dl"
+        }
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "efs-data",
+          "containerPath": "/app/data",
+          "readOnly": true
+        },
+        {
+          "sourceVolume": "efs-results",
+          "containerPath": "/app/results",
+          "readOnly": false
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/topology-dl",
+          "awslogs-region": "ap-northeast-2",
+          "awslogs-stream-prefix": "track-a"
+        }
+      },
+      "command": [
+        "python",
+        "experiments/track_a/train.py",
+        "--model", "ph_mlp",
+        "--dataset", "ECG200",
+        "--use_wandb"
+      ]
+    }
+  ],
+  "volumes": [
+    {
+      "name": "efs-data",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "${EFS_FILE_SYSTEM_ID}",
+        "rootDirectory": "/data/ucr"
+      }
+    },
+    {
+      "name": "efs-results",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "${EFS_FILE_SYSTEM_ID}",
+        "rootDirectory": "/results"
+      }
+    }
+  ],
+  "tags": [
+    {
+      "key": "Project",
+      "value": "topology-efficient-dl"
+    },
+    {
+      "key": "Track",
+      "value": "A"
+    }
+  ]
+}

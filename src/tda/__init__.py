@@ -4,6 +4,7 @@ from .vectorization import (
     persistence_landscape,
     persistence_image,
     persistence_statistics,
+    vectorize_diagrams,
 )
 
 __all__ = [
@@ -13,4 +14,5 @@ __all__ = [
     "persistence_landscape",
     "persistence_image",
     "persistence_statistics",
+    "vectorize_diagrams",
 ]

@@ -1,0 +1,27 @@
+{
+  "family": "topology-dl-ph-mlp",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "4096",
+  "memory": "8192",
+  "executionRoleArn": "arn:aws:iam::931016744724:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::931016744724:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "ph-mlp-trainer",
+      "image": "931016744724.dkr.ecr.ap-northeast-2.amazonaws.com/topology-dl:latest",
+      "essential": true,
+      "environment": [
+        {"name": "AWS_DEFAULT_REGION", "value": "ap-northeast-2"}
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/topology-dl",
+          "awslogs-region": "ap-northeast-2",
+          "awslogs-stream-prefix": "ph-mlp"
+        }
+      }
+    }
+  ]
+}
