@@ -1,0 +1,42 @@
+# Core
+torch>=2.0.0
+pytorch-lightning>=2.0.0
+numpy>=1.24.0
+scipy>=1.10.0
+scikit-learn>=1.2.0
+
+# Graph Neural Networks
+torch-geometric>=2.3.0
+
+# Topological Data Analysis
+ripser>=0.6.0
+gudhi>=3.8.0
+giotto-tda>=0.6.0
+
+# Tensor Decomposition
+tensorly>=0.8.0
+
+# Configuration
+hydra-core>=1.3.0
+omegaconf>=2.3.0
+
+# Experiment Tracking
+wandb>=0.15.0
+
+# Profiling
+fvcore>=0.1.5
+
+# Data
+pandas>=2.0.0
+
+# Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Optional: Audio processing
+# librosa>=0.10.0
+
+# Development
+pytest>=7.0.0
+black>=23.0.0
+isort>=5.12.0

@@ -1,0 +1,42 @@
+# 공통 실험 설정
+
+training:
+  optimizer: adamw
+  learning_rate: 1e-3
+  weight_decay: 0.01
+  scheduler: cosine
+  warmup_steps: 100
+  max_epochs: 100
+  early_stopping:
+    patience: 10
+    metric: val_loss
+    mode: min
+  seeds: [42, 123, 456]
+
+data:
+  batch_size: 32
+  num_workers: 4
+  val_ratio: 0.15
+  test_ratio: 0.15
+
+evaluation:
+  metrics:
+    classification:
+      - accuracy
+      - f1_macro
+      - auroc
+    regression:
+      - mae
+      - mse
+      - rmse
+  efficiency:
+    - params
+    - flops
+    - latency_ms
+    - peak_vram_mb
+    - throughput_samples_per_sec
+
+logging:
+  project: topology-efficient-dl
+  save_dir: ./results
+  log_every_n_steps: 10

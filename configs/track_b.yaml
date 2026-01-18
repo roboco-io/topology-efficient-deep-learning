@@ -1,0 +1,49 @@
+# Track B: Simplicial/Cell Complex 기반 고차 관계 모델링
+
+defaults:
+  - base
+
+task: node_classification  # node_classification, graph_classification
+
+data:
+  dataset: custom  # custom, ogb
+  path: ./data/graph
+  # 고차 관계 구축 설정
+  simplicial:
+    method: cooccurrence  # cooccurrence, clique, temporal
+    time_window: 60  # seconds
+    min_cooccurrence: 2
+    max_simplex_dim: 2
+
+model:
+  # Baseline models
+  baseline:
+    type: gcn  # gcn, graphsage, gat, hypergraph
+    hidden_dims: [64, 64]
+    num_layers: 2
+    dropout: 0.1
+    # GAT specific
+    num_heads: 4
+
+  # Proposed Simplicial/Cell NN
+  proposed:
+    type: simplicial_nn  # simplicial_nn, cell_complex_nn
+    hidden_dims: [64, 64]
+    num_layers: 2
+    dropout: 0.1
+    # Simplex dimensions to use
+    simplex_dims: [0, 1, 2]
+    # Message passing type
+    mp_type: boundary  # boundary, coboundary, both
+
+ablation:
+  simplex_dims:
+    - [0, 1]  # graph only
+    - [0, 1, 2]  # with triangles
+  num_layers: [2, 4, 6]
+  time_windows: [30, 60, 120]
+  cooccurrence_thresholds: [2, 3, 5]
+
+scaling:
+  node_counts: [10000, 50000, 100000]
+  densities: [0.001, 0.005, 0.01]

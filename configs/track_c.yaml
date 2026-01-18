@@ -1,0 +1,49 @@
+# Track C: 텐서 분해 기반 가중치 압축
+
+defaults:
+  - base
+
+task: classification
+
+data:
+  # Track A 또는 B의 데이터 사용
+  source: track_a  # track_a, track_b
+
+model:
+  # Base model to compress
+  base_model:
+    type: transformer  # transformer, mlp
+    hidden_dim: 256
+    num_layers: 4
+    num_heads: 4
+    ffn_dim: 1024
+
+  # Compression methods
+  compression:
+    # Baseline compressions
+    baseline:
+      - type: none
+      - type: pruning
+        sparsity: 0.5
+      - type: lora
+        rank: 16
+      - type: low_rank
+        rank: 64
+
+    # Proposed tensor decomposition
+    proposed:
+      type: tensor_train  # tensor_train, mpo, tucker
+      ranks: [4, 8, 16, 32, 64]
+      # Which layers to compress
+      target_layers:
+        - ffn  # ffn, attention, both
+
+ablation:
+  compression_targets:
+    - ffn
+    - attention
+    - both
+  rank_schedule:
+    - fixed
+    - increasing  # start low, increase during training
+  ranks: [4, 8, 16, 32, 64]

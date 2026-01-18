@@ -1,0 +1,57 @@
+# Track A: Persistent Homology 기반 피처 압축
+
+defaults:
+  - base
+
+task: classification
+
+data:
+  dataset: ucr  # ucr, uea, custom
+  name: ECG200
+  path: ./data/ucr
+
+tda:
+  embedding:
+    method: takens  # takens, sliding_window, stft
+    delay: 5
+    dimension: 3
+    window_size: 32
+  persistence:
+    homology_dims: [0, 1]
+    max_edge_length: null
+  vectorization:
+    method: persistence_landscape  # persistence_landscape, persistence_image, statistics
+    resolution: 100
+    num_landscapes: 5
+
+model:
+  # Baseline models
+  baseline:
+    type: cnn_1d  # cnn_1d, gru, tcn, transformer
+    hidden_dims: [32, 64, 128]
+    dropout: 0.1
+
+  # Proposed PH + MLP
+  proposed:
+    type: ph_mlp
+    hidden_dims: [64, 32]
+    dropout: 0.1
+
+  # Hybrid: CNN -> PH -> MLP
+  hybrid:
+    encoder:
+      type: cnn_1d
+      hidden_dims: [16, 32]
+    head:
+      hidden_dims: [32]
+
+ablation:
+  ph_dims:
+    - [0]
+    - [0, 1]
+  window_sizes: [16, 32, 64, 128]
+  delays: [2, 3, 5, 10]
+  vectorizations:
+    - persistence_landscape
+    - persistence_image
+    - statistics
