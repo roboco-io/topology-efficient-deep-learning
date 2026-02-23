@@ -15,12 +15,22 @@ pip install -r requirements.txt
 
 # Track A 실험 (PH 기반 시계열 분류)
 python experiments/track_a/train.py --model ph_mlp --dataset ECG200
-python experiments/track_a/train.py --model cnn --dataset ECG200  # 베이스라인
+python experiments/track_a/train.py --model inceptiontime --dataset ECG200  # 베이스라인
+
+# 배치 실험 (전체 데이터셋 × 모델 × 시드)
+python experiments/track_a/run_experiments.py --all            # 전체
+python experiments/track_a/run_experiments.py --datasets ECG200 FordA --models ph_mlp inceptiontime
+python experiments/track_a/run_experiments.py --ablation       # Ablation 포함
+python experiments/track_a/run_experiments.py --dry_run        # 명령어만 확인
+
+# SageMaker Spot Training
+python infrastructure/sagemaker/run_benchmark.py --all --dry-run  # 비용 확인
+python infrastructure/sagemaker/run_benchmark.py --dataset ECG200 --model ph_mlp --role <ARN>
 
 # 테스트
 pytest tests/
-pytest tests/test_tda.py -v  # 단일 파일
-pytest tests/test_tda.py::test_persistence -v  # 단일 테스트
+pytest tests/test_tda.py -v
+pytest tests/test_tda.py::test_persistence -v
 
 # 코드 포맷팅
 black src/ experiments/
@@ -30,9 +40,9 @@ isort src/ experiments/
 ## 아키텍처
 
 ### 실험 트랙 구조
-- **Track A**: Persistent Homology → 시계열 분류. 원본 대신 위상 요약 피처로 작은 모델 사용
-- **Track B**: Simplicial/Cell Complex → 그래프. 고차 관계로 전역 attention 회피
-- **Track C**: Tensor Decomposition → 범용. 가중치를 TT/MPO로 압축
+- **Track A** (완료, 가설 기각): Persistent Homology → 시계열 분류. PH-MLP가 InceptionTime 대비 8~32%p 낮은 성능
+- **Track B** (구현됨, 미실험): Simplicial/Cell Complex → 그래프. 경계/코경계 메시지 패싱
+- **Track C** (구현됨, 미실험): Tensor Decomposition → 범용. TT 분해로 가중치 압축
 
 ### 데이터 흐름 (Track A)
 
@@ -46,26 +56,45 @@ isort src/ experiments/
                                      분류
 ```
 
+베이스라인 모델(InceptionTime, ResNet1D, FCN, CNN1D, GRU, TCN)은 원본 시계열을 직접 입력받음.
+
 ### 핵심 모듈
 
 | 경로 | 역할 |
 |------|------|
-| `src/tda/embeddings.py` | Takens, sliding window embedding |
-| `src/tda/persistence.py` | ripser/gudhi 백엔드로 PH 계산 |
-| `src/tda/vectorization.py` | Persistence landscape/image/stats 변환 |
+| `src/tda/` | TDA 파이프라인: embeddings → persistence (ripser/gudhi) → vectorization |
 | `src/models/tda/ph_mlp.py` | PH 벡터 → MLP 분류기 |
-| `src/models/simplicial/simplicial_nn.py` | 경계/코경계 기반 메시지 패싱 |
-| `src/models/tensor/tt_linear.py` | Tensor Train Linear (가중치 압축) |
-| `src/utils/metrics.py` | F1, AUROC + 효율 지표 (params, latency, throughput) |
+| `src/models/baselines/` | InceptionTime, ResNet1D, FCN, CNN1D, GRU, TCN |
+| `src/models/simplicial/simplicial_nn.py` | SimplicialConv: 경계/코경계 행렬 기반 메시지 패싱 |
+| `src/models/tensor/tt_linear.py` | TTLinear: 가중치를 TT core로 분해, `compression_ratio()` 제공 |
+| `src/data/ucr.py` | UCR Archive 로더 (TSV 형식, 레이블 0-indexed 자동 변환) |
+| `src/utils/metrics.py` | `compute_metrics` (F1/AUROC) + `compute_efficiency_metrics` (params/latency/throughput) |
 
-### 설정 시스템
-- `configs/base.yaml`: 공통 설정 (optimizer, scheduler, metrics)
+### 모델 공통 인터페이스
+
+모든 모델은 `count_parameters() → int` 메서드를 구현. TTLinear은 추가로 `compression_ratio() → float` 제공.
+
+### 실험 설정
+
+- `configs/base.yaml`: AdamW, cosine scheduler, early stopping (patience=10), 시드 [42, 123, 456]
 - `configs/track_{a,b,c}.yaml`: 트랙별 하이퍼파라미터
+- `experiments/track_a/train.py`: 단일 실험. `--model` (ph_mlp|inceptiontime|resnet|fcn|cnn|gru|tcn), `--vectorization` (persistence_landscape|persistence_image|statistics)
+- `experiments/track_a/run_experiments.py`: 배치 실행기. 데이터셋 5개 × 모델 × 시드 3개 조합, ablation (vectorization/homology/embedding 파라미터)
 
 ### 인프라
-- 데이터나 트레이닝의 성격에 따라 로컬, AWS ECS Fargate, SageMaker 중 선택
-- AWS 사용시엔 시간 및 비용 최적화를 위해 스팟 요금제를 필수로 사용한다. 
-- AWS 사용 테스트 병렬화가 가능한 경우 여러 태스크를 동시에 실행하고, 단일 테스트도 멀티 CPU, 멀티 GPU 인스턴스를 최대한 활용한다.
+
+- 로컬, AWS ECS Fargate, SageMaker 중 선택
+- AWS 사용시 **스팟 요금제 필수**. 병렬화 가능하면 여러 태스크 동시 실행
+- `infrastructure/sagemaker/`: SageMaker Managed Spot Training (ml.g4dn.xlarge, ~$0.16/hr)
+- `infrastructure/ecs/`: Dockerfile + ECS Fargate 태스크 정의
+- 데이터는 `./data/ucr/` 에 UCR Archive TSV 형식으로 저장 (`scripts/download_ucr.py`로 다운로드)
+
+### 결과 저장 구조
+
+`results/track_a/{dataset}/{dataset}_{model}_seed{seed}/` 하위에:
+- `metrics.json`: 성능 + 효율 지표
+- `training_log.json`: 에폭별 로그
+- `model.pt`: 모델 가중치
 
 ## 코드 컨벤션
 
