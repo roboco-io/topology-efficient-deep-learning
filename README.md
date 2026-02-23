@@ -271,6 +271,10 @@ python scripts/plot_results.py \
     --output figures/track_a_pareto.png
 ```
 
+## 튜토리얼
+
+- [바이브 코딩으로 딥러닝 연구하기](docs/tutorial-vibe-coding-dl-research.md): 이 프로젝트의 수행 이력을 기반으로, AI 코딩 어시스턴트와 서버리스 인프라를 활용하여 최소 비용($0.40)으로 딥러닝 가설을 검증하는 전 과정을 다루는 튜토리얼
+
 ## 참고 문헌
 
 - [Persistent Homology for Time Series](https://arxiv.org/abs/1910.14424)
